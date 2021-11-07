@@ -197,7 +197,7 @@ for payout in payouts:
     log(f"│  Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
   else:
     payout.nonce - 1
-    log(f"├─ Skipping Scholar payout: amount is 0 SLP", end="")
+    log(f"├─ Skipping Scholar payout: amount is 0 SLP")
 
   if (payout.academy_transaction.amount > 0):
     log(f"├─ Academy payout: sending {payout.academy_transaction.amount} SLP from {formatRoninAddress(payout.academy_transaction.from_address)} to {formatRoninAddress(payout.academy_transaction.to_address)}...", end="")
@@ -207,7 +207,7 @@ for payout in payouts:
     log(f"│  Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
   else:
     payout.nonce - 1
-    log(f"├─ Skipping Academy payout: amount is 0 SLP", end="")
+    log(f"├─ Skipping Academy payout: amount is 0 SLP")
 
   if (payout.fee_transaction.amount > 0):
     log(f"└─ Fee payout: sending {payout.fee_transaction.amount} SLP from {formatRoninAddress(payout.fee_transaction.from_address)} to {formatRoninAddress(payout.fee_transaction.to_address)}...", end="")
@@ -216,5 +216,5 @@ for payout in payouts:
     log("DONE")
     log(f"   Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
   else:
-    log(f"├─ Skipping Fee payout: amount is 0 SLP", end="")
+    log(f"├─ Skipping Fee payout: amount is 0 SLP")
   log()
