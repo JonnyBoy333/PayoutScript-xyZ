@@ -4,20 +4,13 @@ from web3 import Web3, exceptions
 import json, requests, time
 import asyncio
 
-web3 = Web3(Web3.HTTPProvider(
-  'https://proxy.roninchain.com/free-gas-rpc',
-  request_kwargs={
-      "headers":{"content-type":"application/json","user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1944.0 Safari/537.36"}
-    }
-  )
-)
-web3_2 = Web3(
-  Web3.HTTPProvider('https://api.roninchain.com/rpc',
-  request_kwargs={
-      "headers":{"content-type":"application/json","user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1944.0 Safari/537.36"}
-    }
-  )
-)
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
+headers = {
+  "Content-Type": "application/json",
+  "User-Agent": USER_AGENT }
+
+web3 = Web3(Web3.HTTPProvider('https://proxy.roninchain.com/free-gas-rpc', request_kwargs={ "headers": headers }))
+web3_2 = Web3(Web3.HTTPProvider('https://api.roninchain.com/rpc', request_kwargs={ "headers": headers }))
 
 with open('slp_abi.json') as f:
     slp_abi = json.load(f)
