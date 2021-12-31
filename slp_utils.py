@@ -80,7 +80,7 @@ async def execute_slp_claim(claim, nonces):
     nonces[claim.address] += 1
 
     hash = web3.toHex(web3.keccak(signed_txn.rawTransaction))
-    waitMessage = f"   Waiting for {claim.name}'s ({claim.address('0x', 'ronin:')}) claim to finish."
+    waitMessage = "   Waiting for {}'s ({}) claim to finish.".format(claim.name, claim.address('0x', 'ronin:'))
     transaction_successful = await wait_for_transaction_to_complete(hash, waitMessage)
     return transaction_successful
 

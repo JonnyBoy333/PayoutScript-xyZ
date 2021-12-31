@@ -218,7 +218,7 @@ async def execute_payout(payout):
   else:
     log(f"├─ Skipping Fee payout: amount is 0 SLP")
   loop = asyncio.get_event_loop()
-  loop.run_until_complete(asyncio.gather(*[slp_utils.wait_for_transaction_to_complete(tran) for tran in pendingTransactions]))
+  loop.run_until_complete(asyncio.gather(*[slp_utils.wait_for_transaction_to_complete(tran, f'Waiting for {payout.name}\'s {payout.action}({payout.hash}) to finish.') for tran in pendingTransactions]))
 
 # for payout in payouts:
 #   execute_payout(payout)
