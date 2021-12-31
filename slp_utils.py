@@ -42,7 +42,7 @@ def get_unclaimed_slp(address):
 
     return total
 
-async def wait_for_transaction_to_complete(hash, address, name):
+async def wait_for_transaction_to_complete(hash, waitMessage):
     maximum_retries = 24 # Give each transaction 2 minutes to complete
     success = False
     for _ in range(maximum_retries):
@@ -52,7 +52,7 @@ async def wait_for_transaction_to_complete(hash, address, name):
                 success = True
             break
         except exceptions.TransactionNotFound:
-            print(f"   Waiting for {name}'s ({address.replace('0x', 'ronin:')}) claim to finish.")
+            print(waitMessage)
             # Pause between requests
             await asyncio.sleep(5)
     return success
@@ -64,8 +64,9 @@ async def execute_slp_claim(claim, nonces):
         custom_headers["authorization"] = f"Bearer {access_token}"
         response = requests.post(f"https://game-api.skymavis.com/game-api/clients/{claim.address}/items/1/claim", headers=custom_headers, json="")
         if (response.status_code != 200):
-            print(response.text)
-        assert(response.status_code == 200)
+            print(f"There was a problem claiming SLP for {claim.name}: {response.text}")
+            return False
+        # assert(response.status_code == 200)
         result = response.json()["blockchain_related"]["signature"]
 
         claim.state["signature"] = result["signature"].replace("0x", "")
@@ -79,7 +80,8 @@ async def execute_slp_claim(claim, nonces):
     nonces[claim.address] += 1
 
     hash = web3.toHex(web3.keccak(signed_txn.rawTransaction))
-    transaction_successful = await wait_for_transaction_to_complete(hash, claim.address, claim.name)
+    waitMessage = f"   Waiting for {claim.name}'s ({claim.address('0x', 'ronin:')}) claim to finish."
+    transaction_successful = await wait_for_transaction_to_complete(hash, waitMessage)
     return transaction_successful
 
 def transfer_slp(transaction, private_key, nonce):
