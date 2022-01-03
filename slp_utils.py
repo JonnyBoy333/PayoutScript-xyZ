@@ -49,7 +49,7 @@ async def wait_for_transaction_to_complete(hash, waitMessage):
         try:
             receipt = web3.eth.get_transaction_receipt(hash)
             if receipt["status"] == 1:
-                success = True
+              success = True
             break
         except exceptions.TransactionNotFound:
             print(waitMessage)
@@ -80,8 +80,7 @@ async def execute_slp_claim(claim, nonces):
     nonces[claim.address] += 1
 
     hash = web3.toHex(web3.keccak(signed_txn.rawTransaction))
-    waitMessage = "   Waiting for {}'s ({}) claim to finish.".format(claim.name, claim.address('0x', 'ronin:'))
-    transaction_successful = await wait_for_transaction_to_complete(hash, waitMessage)
+    transaction_successful = wait_for_transaction_to_complete(hash, f"   Waiting for {claim.name}'s ({claim.address.replace('0x', 'ronin:')}) claim to finish.")
     return transaction_successful
 
 def transfer_slp(transaction, private_key, nonce):

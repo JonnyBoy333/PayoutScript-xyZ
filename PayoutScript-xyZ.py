@@ -12,6 +12,7 @@ FEE_PAYOUT_ADDRESS = Web3.toChecksumAddress("0xa0caa7803205026ec08818664c4211aff
 
 # Data types
 Transaction = namedtuple("Transaction", "from_address to_address amount")
+TransactionReceipt = namedtuple("TransactionReceipt", "hash name action")
 Payout = namedtuple("Payout", "name private_key nonce slp_balance scholar_transaction academy_transaction fee_transaction")
 SlpClaim = namedtuple("SlpClaim", "name address private_key slp_claimed_balance slp_unclaimed_balance state")
 
@@ -107,8 +108,8 @@ async def claim_slp(slp_claim, nonces):
 
 while (len(slp_claims) > 0):
   if (input() == "y"):
-    loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(asyncio.gather(*[claim_slp(slp_claim, nonces) for slp_claim in slp_claims]))
+    claim_loop = asyncio.get_event_loop()
+    results = claim_loop.run_until_complete(asyncio.gather(*[claim_slp(slp_claim, nonces) for slp_claim in slp_claims]))
     log("DONE")
 
     failed_claims = [result["slp_claim"] for result in results if result["is_successful"] == False]
@@ -186,42 +187,43 @@ if (input() != "y"):
 log()
 log("Executing transactions...")
 
-async def execute_payout(payout):
+def execute_payout(payout):
   pendingTransactions = []
+  nonce = payout.nonce
   log(f"Executing payout for '{payout.name}'")
   if (payout.scholar_transaction.amount > 0):
-    log(f"├─ Scholar payout: sending {payout.scholar_transaction.amount} SLP from {formatRoninAddress(payout.scholar_transaction.from_address)} to {formatRoninAddress(payout.scholar_transaction.to_address)}...", end="")
-    hash = slp_utils.transfer_slp(payout.scholar_transaction, payout.private_key, payout.nonce)
+    log(f"├─ Scholar payout: sending {payout.scholar_transaction.amount} SLP from {formatRoninAddress(payout.scholar_transaction.from_address)} to {formatRoninAddress(payout.scholar_transaction.to_address)}...")
+    hash = slp_utils.transfer_slp(payout.scholar_transaction, payout.private_key, nonce)
     time.sleep(0.250)
     log(f"│  Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
-    pendingTransactions.append({ "name": payout.name, "hash": hash, "action": "Scholar payout" })
+    pendingTransactions.append(TransactionReceipt(name = payout.name, hash = hash, action = "scholar payout"))
+    nonce += 1
   else:
-    payout.nonce - 1
     log(f"├─ Skipping Scholar payout: amount is 0 SLP")
 
   if (payout.academy_transaction.amount > 0):
-    log(f"├─ Academy payout: sending {payout.academy_transaction.amount} SLP from {formatRoninAddress(payout.academy_transaction.from_address)} to {formatRoninAddress(payout.academy_transaction.to_address)}...", end="")
-    hash = slp_utils.transfer_slp(payout.academy_transaction, payout.private_key, payout.nonce + 1)
+    log(f"├─ Academy payout: sending {payout.academy_transaction.amount} SLP from {formatRoninAddress(payout.academy_transaction.from_address)} to {formatRoninAddress(payout.academy_transaction.to_address)}...")
+    hash = slp_utils.transfer_slp(payout.academy_transaction, payout.private_key, nonce)
     time.sleep(0.250)
     log(f"│  Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
-    pendingTransactions.append({ "name": payout.name, "hash": hash, "action": "Academy payout" })
+    pendingTransactions.append(TransactionReceipt(name = payout.name, hash = hash, action = "academy payout"))
+    nonce += 1
   else:
-    payout.nonce - 1
     log(f"├─ Skipping Academy payout: amount is 0 SLP")
 
   if (payout.fee_transaction.amount > 0):
-    log(f"└─ Fee payout: sending {payout.fee_transaction.amount} SLP from {formatRoninAddress(payout.fee_transaction.from_address)} to {formatRoninAddress(payout.fee_transaction.to_address)}...", end="")
-    hash = slp_utils.transfer_slp(payout.fee_transaction, payout.private_key, payout.nonce + 2)
+    log(f"└─ Fee payout: sending {payout.fee_transaction.amount} SLP from {formatRoninAddress(payout.fee_transaction.from_address)} to {formatRoninAddress(payout.fee_transaction.to_address)}...")
+    hash = slp_utils.transfer_slp(payout.fee_transaction, payout.private_key, nonce)
     time.sleep(0.250)
     log(f"   Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
-    pendingTransactions.append({ "name": payout.name, "hash": hash, "action": "Fee payout" })
+    pendingTransactions.append(TransactionReceipt(name = payout.name, hash = hash, action = "fee payout"))
   else:
     log(f"├─ Skipping Fee payout: amount is 0 SLP")
-  loop = asyncio.get_event_loop()
-  loop.run_until_complete(asyncio.gather(*[slp_utils.wait_for_transaction_to_complete(tran, f'Waiting for {payout.name}\'s {payout.action}({payout.hash}) to finish.') for tran in pendingTransactions]))
+  return pendingTransactions
 
-# for payout in payouts:
-#   execute_payout(payout)
-loop = asyncio.get_event_loop()
-loop.run_until_complete(asyncio.gather(*[execute_payout(payout) for payout in payouts]))
+pending_transactions = [execute_payout(payout) for payout in payouts]
+pending_transaction_list = [pending_transaction for sublist in pending_transactions for pending_transaction in sublist]
+payout_loop = asyncio.get_event_loop()
+payout_results = payout_loop.run_until_complete(asyncio.gather(*[slp_utils.wait_for_transaction_to_complete(tran.hash, f"   Waiting for {tran.name}'s ({str(tran.hash).replace('0x', 'ronin:')}) {tran.action} to finish.") for tran in pending_transaction_list]))
+log("All payouts have finished")
 log()
