@@ -97,10 +97,10 @@ if (len(slp_claims) > 0):
 async def claim_slp(slp_claim, nonces):
   log(f"   Claiming {slp_claim.slp_unclaimed_balance} SLP for '{slp_claim.name}'...")
   claim_successful = await slp_utils.execute_slp_claim(slp_claim, nonces)
-  if claim_successful:
-      log(f"   SLP Claimed for account({slp_claim.address.replace('0x', 'ronin:')}!")
-  else:
-      log(f"   SLP Claim for account ({slp_claim.address.replace('0x', 'ronin:')}) failed")
+  if claim_successful == False:
+    log(f"   SLP Claim for account ({slp_claim.address.replace('0x', 'ronin:')}) failed")
+  #     log(f"   SLP Claimed for account({slp_claim.address.replace('0x', 'ronin:')}!")
+  # else:
   return {
     "slp_claim": slp_claim,
     "is_successful": claim_successful
@@ -110,7 +110,7 @@ while (len(slp_claims) > 0):
   if (input() == "y"):
     claim_loop = asyncio.get_event_loop()
     results = claim_loop.run_until_complete(asyncio.gather(*[claim_slp(slp_claim, nonces) for slp_claim in slp_claims]))
-    log("DONE")
+    log()
 
     failed_claims = [result["slp_claim"] for result in results if result["is_successful"] == False]
     if (len(failed_claims) > 0):
@@ -212,18 +212,21 @@ def execute_payout(payout):
     log(f"├─ Skipping Academy payout: amount is 0 SLP")
 
   if (payout.fee_transaction.amount > 0):
-    log(f"└─ Fee payout: sending {payout.fee_transaction.amount} SLP from {formatRoninAddress(payout.fee_transaction.from_address)} to {formatRoninAddress(payout.fee_transaction.to_address)}...")
+    log(f"├─ Fee payout: sending {payout.fee_transaction.amount} SLP from {formatRoninAddress(payout.fee_transaction.from_address)} to {formatRoninAddress(payout.fee_transaction.to_address)}...")
     hash = slp_utils.transfer_slp(payout.fee_transaction, payout.private_key, nonce)
     time.sleep(0.250)
-    log(f"   Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
+    log(f"└─ Hash: {hash} - Explorer: https://explorer.roninchain.com/tx/{str(hash)}")
     pendingTransactions.append(TransactionReceipt(name = payout.name, hash = hash, action = "fee payout"))
   else:
-    log(f"├─ Skipping Fee payout: amount is 0 SLP")
+    log(f"└─ Skipping Fee payout: amount is 0 SLP")
+  log()
   return pendingTransactions
+log()
 
 pending_transactions = [execute_payout(payout) for payout in payouts]
 pending_transaction_list = [pending_transaction for sublist in pending_transactions for pending_transaction in sublist]
 payout_loop = asyncio.get_event_loop()
 payout_results = payout_loop.run_until_complete(asyncio.gather(*[slp_utils.wait_for_transaction_to_complete(tran.hash, f"   Waiting for {tran.name}'s ({str(tran.hash).replace('0x', 'ronin:')}) {tran.action} to finish.") for tran in pending_transaction_list]))
-log("All payouts have finished")
+log()
+log("All payouts have finished, time for a coffee.")
 log()
