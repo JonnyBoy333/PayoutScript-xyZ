@@ -25,7 +25,7 @@ def get_claimed_slp(address):
 
 def get_unclaimed_slp(address):
     for i in range(50):
-        response = requests.get(f"https://game-api.skymavis.com/game-api/clients/{address}/items/1", headers=headers, data="")
+        response = requests.get(f"https://game-api-pre.skymavis.com/v1/players/{address}/items/1", headers=headers, data="")
         if (response.status_code == 200): break
         time.sleep(1)
     if (response.status_code != 200):
@@ -33,8 +33,9 @@ def get_unclaimed_slp(address):
     assert(response.status_code == 200)
     result = response.json()
 
-    total = int(result["total"])
-    last_claimed_item_at = datetime.utcfromtimestamp(int(result["last_claimed_item_at"]))
+    # total = int(result["rawTotal"]) - int(result["rawClaimableTotal"])
+    total = int(result["claimableTotal"])
+    last_claimed_item_at = datetime.utcfromtimestamp(int(result["lastClaimedItemAt"]))
 
     if (datetime.utcnow() + timedelta(days=-14) < last_claimed_item_at):
         total = 0
@@ -61,12 +62,12 @@ async def execute_slp_claim(claim, nonces):
         access_token = get_jwt_access_token(claim.address, claim.private_key)
         custom_headers = headers.copy()
         custom_headers["authorization"] = f"Bearer {access_token}"
-        response = requests.post(f"https://game-api.skymavis.com/game-api/clients/{claim.address}/items/1/claim", headers=custom_headers, json="")
+        response = requests.post(f"https://game-api-pre.skymavis.com/v1/players/me/items/1/claim", headers=custom_headers)
         if (response.status_code != 200):
-            print(f"There was a problem claiming SLP for {claim.name}: {response.text}")
+            print(f"There was a problem claiming SLP for {claim.name}: {response.status_code} {response.text}")
             return False
         # assert(response.status_code == 200)
-        result = response.json()["blockchain_related"]["signature"]
+        result = response.json()["blockchainRelated"]["signature"]
 
         claim.state["signature"] = result["signature"].replace("0x", "")
 
